@@ -30,7 +30,6 @@ RAMP = _ALL_CHARS
 CIDX = {c: i for i, c in enumerate(RAMP)}
 QL = 24
 
-# Compact 5x9 bitmap rows (5-bit ints per row) for crisp 6x11 rendering
 _FONT5X9 = {
     " ": (0, 0, 0, 0, 0, 0, 0, 0, 0),
     ".": (0, 0, 0, 0, 0, 0, 4, 4, 0),
@@ -130,7 +129,6 @@ for _i, _ch in enumerate(RAMP):
                 GLYPH_MASK[_i, _r, _c, 0] = 1
 GLYPH_BG = ((1 - GLYPH_MASK) * np.array([4, 4, 6], dtype=np.uint8)).astype(np.uint8)
 
-# 8-row bold chamfered ASCII block letters with crisp outlines and rich metallic fills
 _BLOCK_LETTERS = {
     "H": (
         "/--\\  /--\\",
@@ -351,7 +349,6 @@ def build_cake_cloud():
         else:
             sp_col.append(sc.astype(np.int32))
 
-    # Two exposed vertical cake slice cut faces meeting at tip (0, y, 0)
     for a_wall, side in ((A0, +1.0), (A1, -1.0)):
         nw = 4800
         rw = rng.uniform(0.0, R_CAKE, nw)
@@ -370,7 +367,6 @@ def build_cake_cloud():
             if sel.any():
                 add(pw[sel], nv[sel], mid)
 
-    # Outer curved cake wall with scalloped frosting drips
     no = 4800
     ao = rng.uniform(A0, A1, no)
     yo = rng.uniform(0.025, TOP_H + 0.03, no)
@@ -391,7 +387,6 @@ def build_cake_cloud():
         if sel.any():
             add(po[sel], rvo[sel], mid)
 
-    # Top frosted surface wedge
     nt = 6000
     rt = R_CAKE * np.sqrt(rng.uniform(0.0, 1.0, nt))
     at = rng.uniform(A0, A1, nt)
@@ -404,7 +399,6 @@ def build_cake_cloud():
     nv /= np.linalg.norm(nv, axis=-1, keepdims=True)
     add(pt, nv, MAT_FROST)
 
-    # Slim crimson-and-white spiral birthday candle + wick
     base_y = float(frosting_y(np.array([CANDLE_POS[0]]), np.array([CANDLE_POS[2]]))[0]) - 0.03
     nc = 1800
     ac = rng.uniform(0.0, TAU, nc)
@@ -419,7 +413,6 @@ def build_cake_cloud():
     wp = CANDLE_POS[None, :] + np.stack([np.zeros_like(w_y), base_y + 0.64 + w_y, np.zeros_like(w_y)], axis=-1).astype(np.float32)
     add(wp, np.tile(np.array([0.0, 1.0, 0.0], dtype=np.float32), (len(w_y), 1)), MAT_CRUST)
 
-    # Sleek scalloped silver-and-gold platter extending around the slice center
     np_d = 2100
     ap = rng.uniform(0.0, TAU, np_d)
     up = np.sqrt(rng.uniform(0.0, 1.0, np_d))
@@ -440,7 +433,6 @@ def build_cake_cloud():
         MAT_GOLD,
     )
 
-    # Delicate sparse rainbow sprinkles across top frosting only
     for i in range(36):
         col_i = i % len(SPRINKLE_PAL)
         rs = rng.uniform(0.24, R_CAKE - 0.12)
@@ -522,7 +514,6 @@ def _build_word_cells(word, top_row, center_col, spacing, palette_rgb, start_del
                 else:
                     glyph = g
                     br = 0.72
-                # Clean left-to-right typewriter reveal sweep across letters and columns
                 delay = start_delay + li * letter_step + cc * 0.014 + rng.uniform(0.0, 0.025)
                 cells.append((top_row + rr, lx + cc, glyph, palette_rgb * br, delay, g == "#"))
         lx += w_ch + spacing
@@ -610,7 +601,6 @@ def render_cells(t, dt):
     idx[STAR_R, STAR_C] = CIDX["."]
     fg[STAR_R, STAR_C] = np.array([0.45, 0.50, 0.62], dtype=np.float32)[None, :] * twk[:, None]
 
-    # Bottom-to-top particle assembly with tight visible rain stream
     u_rain = np.clip((t - T_RAIN0 - CAKE_ORD * 2.45) / 0.85, 0.0, 1.0)
     k_rain = u_rain * u_rain * (3.0 - 2.0 * u_rain)
     inv_k = 1.0 - k_rain
@@ -692,7 +682,6 @@ def render_cells(t, dt):
         mat_map[fi_ord] = mat_ord
         mat_2d = mat_map.reshape(ROWS, COLS)
 
-        # Clean vector ASCII boundary strokes ONLY on cake & candle (not sparse plate!)
         if t >= 3.2:
             occ = (mat_2d >= 0) & (mat_2d != MAT_PLATE) & (mat_2d != MAT_GOLD) & (mat_2d != MAT_SPRINKLE)
             occ[:2, :] = False
@@ -708,7 +697,6 @@ def render_cells(t, dt):
             idx[(up_e & lf_e) | (dn_e & rt_e)] = CIDX["/"]
             idx[(up_e & rt_e) | (dn_e & lf_e)] = CIDX["\\"]
 
-    # Glowing billboarded teardrop flame + incandescent core + warm amber dotted halo
     if flame_grow > 0.02:
         w = 0.160 * np.sin(m.pi * (_FLAME_V ** 0.60)) * (1.0 - 0.24 * _FLAME_V) * flame_grow
         lean = 0.036 * m.sin(t * 2.4) + 0.014 * m.sin(t * 7.2)
@@ -767,7 +755,6 @@ def render_cells(t, dt):
                     idx[rr, cc] = int(c_idx[k])
                     fg[rr, cc] = np.clip(c_rgb[k], 0.0, 1.0)
 
-    # HAPPY BIRTHDAY MAHAMAD crisp vectorized typewriter reveal with white-gold flash & top glints
     if t >= T_TEXT0:
         dt_v = t - T_TEXT0 - TEXT_DELAY
         vis = dt_v > 0.0
@@ -818,7 +805,6 @@ def render_cells(t, dt):
                     idx[18, px + 1] = CIDX["/"]
                     fg[18, px + 1] = p_glint * 0.55
 
-    # Falling colorful confetti
     conf_count = 0
     if t >= T_CONFETTI0:
         dt_c = t - T_CONFETTI0
@@ -837,7 +823,6 @@ def render_cells(t, dt):
                 idx[rr, cc] = CIDX[gch]
                 fg[rr, cc] = CONFETTI_PAL[CONF_COL_I[i]]
 
-    # Minimal terminal HUD
     hud_dim = np.array([0.48, 0.50, 0.56], dtype=np.float32)
     hud_red = np.array([0.92, 0.30, 0.35], dtype=np.float32)
     hud_gold = np.array([0.85, 0.72, 0.42], dtype=np.float32)
